@@ -4,11 +4,13 @@ var fs = require('fs')
 app = express().http().io()
 
 var k = new Kismet('192.168.1.238',2501)
+var ssids = []
+var clients = []
 var owners = []
 var clisrc = []
 var source = []
 var packetrates = []
-var rightnow = parseInt(new Date().valueOf()/1000)
+var rightnow = Number(new Date().valueOf()/1000)
 
 k.on('connect',function(){
     console.log('connected!')
@@ -16,7 +18,7 @@ k.on('connect',function(){
 
 k.on('ready',function(){
     console.log('ready!')
-    
+
     this.subscribe('bssid'
         , ['bssid','manuf','channel','signal_dbm']
         , function(had_error,message){
@@ -42,8 +44,8 @@ k.on('ready',function(){
         , function(had_error,message){
             console.log('source - '+ message)
     })
-    
-    /* 
+
+    /*
     // output all known sentences & fields
     console.log('protocols:')
     console.log(k.protocols)
@@ -54,7 +56,7 @@ k.on('ready',function(){
 })
 
 /*
-k.on('rawData',function(rawData){ 
+k.on('rawData',function(rawData){
     console.log('raw:'+rawData)
 })
 */
@@ -71,7 +73,13 @@ k.on('BSSID',function(fields){
         + ' manuf: ' + fields.manuf
         + ' channel: ' + fields.channel
     )*/
-	app.io.broadcast('bssid', {bssid: fields.bssid, manuf: fields.manuf, channel: fields.channel, signal_dbm: fields.signal_dbm})
+    if(ssids[fields.bssid] != undefined){
+      ssids[fields.bssid].manuf = fields.manuf
+      ssids[fields.bssid].channel = fields.channel
+      ssids[fields.bssid].signal_dbm = fields.signal_dbm
+    }
+
+	//app.io.broadcast('bssid', {bssid: fields.bssid, manuf: fields.manuf, channel: fields.channel, signal_dbm: fields.signal_dbm})
 })
 
 k.on('SSID',function(fields){
@@ -80,7 +88,14 @@ k.on('SSID',function(fields){
 		+ ' type: ' + k.types.lookup('ssid',fields.type)
 		+ ' ssid: ' + fields.ssid
 	)*/
-	app.io.broadcast('ssid', {mac: fields.mac, ssid: fields.ssid, type: fields.type, lasttime: fields.lasttime})
+  if(ssids[fields.mac] == undefined){
+      ssids[fields.mac] = {ssid: '', type: 0, lasttime: 0, manuf: '', channel: 0, signal_dbm: 0}
+  }
+  ssids[fields.mac].ssid = fields.ssid
+  ssids[fields.mac].type = fields.type
+  ssids[fields.mac].lasttime = fields.lasttime
+
+	app.io.broadcast('ssid', {mac: fields.mac, ssid: ssids[fields.mac].ssid, type: ssids[fields.mac].type, lasttime: ssids[fields.mac].lasttime, manuf: ssids[fields.mac].manuf, channel: ssids[fields.mac].channel, signal_dbm: ssids[fields.mac].signal_dbm})
 })
 
 k.on('CLIENT',function(fields){
@@ -89,15 +104,32 @@ k.on('CLIENT',function(fields){
 		+ ' type: ' + k.types.lookup('client',fields.type)
 		+ ' mac: ' + fields.mac
 	)*/
+  if(clients[fields.mac] == undefined){
+    clients[fields.mac] = {name: '', manuf: '', bssid: '', type: 0, lasttime: 0, datasize: 0, signal_dbm: 0, ppm: 1, interface: '', channel: 0}
+  }
+  clients[fields.mac].name = owners[fields.mac]
+  clients[fields.mac].manuf = fields.manuf
+  clients[fields.mac].bssid = fields.bssid
+  clients[fields.mac].type = fields.type
+  clients[fields.mac].lasttime = fields.lasttime
+  clients[fields.mac].datasize = fields.datasize
+  clients[fields.mac].signal_dbm = fields.signal_dbm
+  clients[fields.mac].ppm = packetrates[fields.mac] == undefined ? 0 : packetrates[fields.mac].ppm
+
 	updatePacketRate(fields.mac, fields.lasttime)
-	
-	app.io.broadcast('client', {name: owners[fields.mac],mac: fields.mac, manuf: fields.manuf, bssid: fields.bssid, type: fields.type, lasttime: fields.lasttime, datasize: fields.datasize, signal_dbm: fields.signal_dbm, ppm: packetrates[fields.mac].ppm})
+
+	app.io.broadcast('client', {mac: fields.mac, name: owners[fields.mac], manuf: clients[fields.mac].manuf, bssid: clients[fields.mac].bssid, type: clients[fields.mac].type, lasttime: clients[fields.mac].lasttime, datasize: clients[fields.mac].datasize, signal_dbm: clients[fields.mac].signal_dbm, ppm: packetrates[fields.mac].ppm, interface: clients[fields.mac].interface, channel: clients[fields.mac].channel})
 })
 
 k.on('CLISRC',function(fields){
-	clisrc[fields.mac] = {uuid: fields.uuid, lasttime: fields.lasttime, signal_dbm: fields.signal_dbm}
+	//clisrc[fields.mac] = {uuid: fields.uuid, lasttime: fields.lasttime, signal_dbm: fields.signal_dbm}
 	if(source[fields.uuid] != undefined){
-		app.io.broadcast('clisrc', {mac: fields.mac, username: source[fields.uuid].username, channel: source[fields.uuid].channel, lasttime: fields.lasttime, signal_dbm: fields.signal_dbm})
+    if(clients[fields.mac].lasttime == fields.lasttime){
+        clients[fields.mac].interface = source[fields.uuid].username
+        clients[fields.mac].channel = source[fields.uuid].channel
+    }
+
+		//app.io.broadcast('clisrc', {mac: fields.mac, username: source[fields.uuid].username, channel: source[fields.uuid].channel, lasttime: fields.lasttime, signal_dbm: fields.signal_dbm})
 	}
 })
 
@@ -123,7 +155,7 @@ k.on('end', function(){
 app.get('/', function(req, res) {
 	console.log("tcp client "+req.connection.remoteAddress+" connected.");
 	if(!k.connected) { k.connect() }
-    res.sendfile(__dirname + '/deepscan.html')
+    res.sendfile(__dirname + '/deepscan2.html')
 })
 
 app.use('/js', express.static(__dirname + '/js'))
@@ -159,6 +191,7 @@ function updatePacketRate(mac, lasttime){
 		}
 	}
 	packetrates[mac].ppm = x
+  clients[mac].ppm = x
 }
 
 function updatePacketRates(){
@@ -171,11 +204,12 @@ function updatePacketRates(){
 			if(packetrates[i].packets[j] < (rightnow - 60)){
 				changed = true
 				packetrates[i].packets.splice(j,1)
-				packetrate--
+				if(packetrate >= 0){ packetrate-- }
 			}
 		}
 		if(changed){
 			packetrates[i].ppm = packetrate
+      clients[i].ppm = packetrate
 			app.io.broadcast('packetrate', {mac: i, ppm: packetrate})
 		}
 	}

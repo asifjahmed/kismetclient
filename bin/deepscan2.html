@@ -16,10 +16,9 @@
   App = {};
   App.socket = io.connect();
 
-  var SSIDs = {};
-  var clients = {};
   var ssidexists;
   var clientexists;
+  var counter = 0;
 
   function timeConverter(UNIX_timestamp){
 	 var a = new Date(UNIX_timestamp*1000);
@@ -28,11 +27,11 @@
      var sec = a.getSeconds();
      var time = hour+':'+doubleDigit(min)+':'+doubleDigit(sec) ;
      return time;
- }
+   }
 
  function doubleDigit(n){
     return n > 9 ? "" + n: "0" + n;
-}
+  }
 
   function padtext(text,padsize) {
 	var padded = '';
@@ -54,43 +53,27 @@
   App.ssid = function(data) {
 	if($('#ssidalert').val() == data.mac){ if($('#enablessidsound').prop('checked')){ PlaySound('sound1'); } $("#ssidalertflasher").fadeIn(50).fadeOut(50); }
 
-	ssidexists = SSIDs[data.mac] == undefined ? false : true;
-	SSIDs[data.mac] = ({ssid: data.ssid == '' ? '- hidden ssid -' : data.ssid, type: data.type, lasttime: timeConverter(data.lasttime)});
+  ssidexists = $('#ssidgrid').getRowData(data.mac).mac == undefined ? false : true;
+
 	if(ssidexists) {
-		$('#ssidgrid').setRowData(data.mac,{ssid: SSIDs[data.mac].ssid, mac: data.mac, type: SSIDs[data.mac].type, lasttime: SSIDs[data.mac].lasttime});
+		$('#ssidgrid').setRowData(data.mac,{ssid: data.ssid.trim() == '' ? '- hidden ssid -' : data.ssid, mac: data.mac, type: data.type, lasttime: timeConverter(data.lasttime), manuf: data.manuf, channel: data.channel, signal_dbm: data.signal_dbm});
 	}
 	else {
-		$('#ssidgrid').addRowData(data.mac,{ssid: SSIDs[data.mac].ssid, mac: data.mac, type: SSIDs[data.mac].type, lasttime: SSIDs[data.mac].lasttime});
-		$('#ssidgrid').setGridParam({rowNum: Object.keys(SSIDs).length});
+		$('#ssidgrid').addRowData(data.mac,{ssid: data.ssid.trim() == '' ? '- hidden ssid -' : data.ssid, mac: data.mac, type: data.type, lasttime: timeConverter(data.lasttime), manuf: data.manuf, channel: data.channel, signal_dbm: data.signal_dbm});
 	}
   }
 
   App.client = function(data) {
+    counter++
 	if($('#clientalert').val() == data.mac){ if($('#enableclientsound').prop('checked')){ PlaySound('sound1'); } $("#clientalertflasher").fadeIn(50).fadeOut(50); }
 
-    clientexists = clients[data.mac] == undefined ? false : true;
-	clients[data.mac] = ({name: data.name, bssid: data.bssid, manuf: data.manuf, type: data.type, lasttime: data.lasttime, datasize: data.datasize, signal_dbm: data.signal_dbm, ppm: data.ppm});
-	if(clientexists) {
-		$('#clientgrid').setRowData(data.mac,{name: clients[data.mac].name, bssid: clients[data.mac].bssid == data.mac ? '- self -' : clients[data.mac].bssid, bssidsrc: SSIDs[data.bssid] == undefined ? '' : SSIDs[data.bssid].ssid, manuf: clients[data.mac].manuf, mac: data.mac, type: clients[data.mac].type, lasttime: timeConverter(clients[data.mac].lasttime), signal_dbm: clients[data.mac].signal_dbm, datasize: clients[data.mac].datasize, ppm: clients[data.mac].ppm});
-	}
-	else {
-		$('#clientgrid').addRowData(data.mac,{name: clients[data.mac].name, bssid: clients[data.mac].bssid == data.mac ? '- self -' : clients[data.mac].bssid, bssidsrc: SSIDs[data.bssid] == undefined ? '' : SSIDs[data.bssid].ssid, manuf: clients[data.mac].manuf, mac: data.mac, type: clients[data.mac].type, lasttime: timeConverter(clients[data.mac].lasttime), signal_dbm: clients[data.mac].signal_dbm, datasize: clients[data.mac].datasize, ppm: clients[data.mac].ppm});
-		$('#clientgrid').setGridParam({rowNum: Object.keys(clients).length});
-	}
-  }
+  clientexists = $('#clientgrid').getRowData(data.mac).mac == undefined ? false : true;
 
-  App.clisrc = function(data) {
-	if(clients[data.mac] != undefined){
-		if(clients[data.mac].lasttime == data.lasttime){
-			$('#clientgrid').setRowData(data.mac, {interface: data.username, channel: data.channel})
-		}
-	}
-  }
-
-  App.bssid = function(data) {
-  	if(SSIDs[data.bssid] != undefined){
-  	   $('#ssidgrid').setRowData(data.bssid, {manuf: data.manuf, channel: data.channel, signal_dbm: data.signal_dbm})
-  	}
+  if(clientexists) {
+		$('#clientgrid').setRowData(data.mac,{name: data.name, bssid: data.bssid == data.mac ? '- self -' : data.bssid, bssidsrc: $('#ssidgrid').getRowData(data.bssid).ssid == undefined ? '' : $('#ssidgrid').getRowData(data.bssid).ssid, manuf: data.manuf, mac: data.mac, type: data.type, lasttime: timeConverter(data.lasttime), signal_dbm: data.signal_dbm, datasize: data.datasize, ppm: data.ppm, interface: data.interface, channel: data.channel});
+	  }else{
+		    $('#clientgrid').addRowData(data.mac,{name: data.name, bssid: data.bssid == data.mac ? '- self -' : data.bssid, bssidsrc: $('#ssidgrid').getRowData(data.bssid).ssid == undefined ? '' : $('#ssidgrid').getRowData(data.bssid).ssid, manuf: data.manuf, mac: data.mac, type: data.type, lasttime: timeConverter(data.lasttime), signal_dbm: data.signal_dbm, datasize: data.datasize, ppm: data.ppm, interface: data.interface, channel: data.channel});
+	  }
   }
 
   App.time = function(data) {
@@ -98,19 +81,21 @@
   }
 
   App.packetrate = function(data) {
-  	if(clients[data.mac] != undefined){
-  		$('#clientgrid').setRowData(data.mac, {ppm: data.ppm});
+  	if($('#clientgrid').getRowData(data.mac).mac != undefined){
+      if(data.ppm == 0 && $('#enablerecentonly').prop('checked')){
+          $('#clientgrid').delRowData(data.mac);
+      }else{
+        $('#clientgrid').setRowData(data.mac, {ppm: data.ppm});
+      }
   	}
   }
 
   App.socket.on('ssid', App.ssid);
   App.socket.on('client', App.client);
-  App.socket.on('clisrc', App.clisrc);
-  App.socket.on('bssid', App.bssid);
   App.socket.on('time', App.time);
   App.socket.on('packetrate', App.packetrate);
 
-$(document).ready(function() { renderGrids() } );
+$(document).ready(function() { renderGrids(); } );
 
 function renderGrids() {
 
@@ -214,7 +199,7 @@ function PlaySound(soundObj) {
 </tr>
 <tr>
 <td align="left" valign="top"><div class="ui-widget-content ui-corner-all"><input type="text" class="ui-corner-all" id="ssidalert" size="18" /><span class="ui-state-error ui-corner-all ui-helper-hidden" id="ssidalertflasher">&nbsp;&nbsp;&nbsp;&nbsp;</span><br/><input type="checkbox" id="enablessidsound" />&nbsp;enable beep</div></td>
-<td align="left" valign="top"><div class="ui-widget-content ui-corner-all"><input type="text" class="ui-corner-all" id="clientalert" size="18" /><span class="ui-state-error ui-corner-all ui-helper-hidden" id="clientalertflasher">&nbsp;&nbsp;&nbsp;&nbsp;</span><br/><input type="checkbox" id="enableclientsound" />&nbsp;enable beep</div></td>
+<td align="left" valign="top"><div class="ui-widget-content ui-corner-all"><input type="text" class="ui-corner-all" id="clientalert" size="18" /><span class="ui-state-error ui-corner-all ui-helper-hidden" id="clientalertflasher">&nbsp;&nbsp;&nbsp;&nbsp;</span><br/><input type="checkbox" id="enableclientsound" />&nbsp;enable beep&nbsp;&nbsp;<input type="checkbox" id="enablerecentonly" />&nbsp;only show recent (ppm > 0) packets</div></td>
 </tr>
 </table>
 <input type="text" id="txtTime" />
