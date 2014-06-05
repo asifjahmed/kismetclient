@@ -7,7 +7,6 @@ var k = new Kismet('192.168.1.238',2501)
 var ssids = []
 var clients = []
 var owners = []
-var clisrc = []
 var source = []
 var packetrates = []
 var rightnow = Number(new Date().valueOf()/1000)
@@ -122,15 +121,12 @@ k.on('CLIENT',function(fields){
 })
 
 k.on('CLISRC',function(fields){
-	//clisrc[fields.mac] = {uuid: fields.uuid, lasttime: fields.lasttime, signal_dbm: fields.signal_dbm}
 	if(source[fields.uuid] != undefined){
     if(clients[fields.mac].lasttime == fields.lasttime){
         clients[fields.mac].interface = source[fields.uuid].username
         clients[fields.mac].channel = source[fields.uuid].channel
     }
-
-		//app.io.broadcast('clisrc', {mac: fields.mac, username: source[fields.uuid].username, channel: source[fields.uuid].channel, lasttime: fields.lasttime, signal_dbm: fields.signal_dbm})
-	}
+  }
 })
 
 k.on('SOURCE',function(fields){
