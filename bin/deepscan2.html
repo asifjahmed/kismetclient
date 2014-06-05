@@ -49,7 +49,7 @@
   App.ssid = function(data){
 	   if($('#ssidalert').val() == data.mac){ if($('#enablessidsound').prop('checked')){ PlaySound('sound1'); } $("#ssidalertflasher").fadeIn(50).fadeOut(50); }
 
-    ssidexists = $('#ssidgrid').getRowData(data.mac).mac == undefined ? false : true;
+    ssidexists = $('#ssidgrid').getCell(data.mac,'mac');
 
 	  if(ssidexists){
       $('#ssidgrid').setRowData(data.mac,{ssid: data.ssid.trim() == '' ? '- hidden ssid -' : data.ssid, mac: data.mac, type: data.type, lasttime: timeConverter(data.lasttime), manuf: data.manuf, channel: data.channel, signal_dbm: data.signal_dbm});
@@ -61,7 +61,7 @@
   App.client = function(data){
     if($('#clientalert').val() == data.mac){ if($('#enableclientsound').prop('checked')){ PlaySound('sound1'); } $("#clientalertflasher").fadeIn(50).fadeOut(50); }
 
-    clientexists = $('#clientgrid').getRowData(data.mac).mac == undefined ? false : true;
+    clientexists = $('#clientgrid').getCell(data.mac,'mac');
 
     if(clientexists){
       $('#clientgrid').setRowData(data.mac,{name: data.name, bssid: data.bssid == data.mac ? '- self -' : data.bssid, bssidsrc:     $('#ssidgrid').getRowData(data.bssid).ssid == undefined ? '' : $('#ssidgrid').getRowData(data.bssid).ssid, manuf: data.manuf, mac: data.mac, type: data.type, lasttime: timeConverter(data.lasttime), signal_dbm: data.signal_dbm, datasize: data.datasize, ppm: data.ppm, interface: data.interface, channel: data.channel});
@@ -79,7 +79,7 @@
       if(data.ppm == 0 && recentonly){
           $('#clientgrid').delRowData(data.mac);
       }else{
-        $('#clientgrid').setRowData(data.mac, {ppm: data.ppm});
+        $('#clientgrid').setCell(data.mac,'ppm',data.ppm);
       }
   	}
   }
@@ -183,13 +183,18 @@
   }
 
   function toggleRecentOnly(){
+    var data
+    var mac
     recentonly = $('#enablerecentonly').prop('checked');
     if(recentonly){
-      for(x=0;x<$('#clientgrid').getRowData().length;x++){
-        if($('#clientgrid').getRowData()[x].ppm == 0){
-          $('#clientgrid').delRowData($('#clientgrid').getRowData()[x].mac);
+      data = $('#clientgrid').getDataIDs()
+      for(x=0;x<data.length;x++){
+        mac = data[x];
+        if($('#clientgrid').getCell(mac,'ppm') == 0){
+          $('#clientgrid').delRowData(mac);
         }
       }
+      data.length = 0
     }
   }
 </script>

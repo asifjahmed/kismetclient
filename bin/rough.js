@@ -210,7 +210,7 @@ function updatePacketRates(){
 		if(changed){
 			packetrates[i].ppm = packetrate
       clients[i].ppm = packetrate
-			app.io.broadcast('packetrate', {mac: i, ppm: packetrate})
+      app.io.broadcast('packetrate', {mac: i, ppm: packetrate})
 		}
 	}
 }
