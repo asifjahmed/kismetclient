@@ -1,5 +1,7 @@
 ###
-PUT SOME COMMENTS HERE
+deepscan
+v0.12345
+asifjahmed
 ###
 
 ###
@@ -78,7 +80,7 @@ k.on 'SSID', (fields)->
   app.io.broadcast 'ssid',
     mac: fields.mac
     ssid: ssids[fields.mac].ssid
-    type: ssids[fields.mac].type
+    type: k.types.lookup('ssid', ssids[fields.mac].type)
     lasttime: ssids[fields.mac].lasttime
     manuf: ssids[fields.mac].manuf
     channel: ssids[fields.mac].channel
@@ -114,7 +116,7 @@ k.on 'CLIENT', (fields)->
     name: owners[fields.mac]
     manuf: clients[fields.mac].manuf
     bssid: clients[fields.mac].bssid
-    type: clients[fields.mac].type
+    type: k.types.lookup('client', clients[fields.mac].type)
     lasttime: clients[fields.mac].lasttime
     datasize: clients[fields.mac].datasize
     signal_dbm: clients[fields.mac].signal_dbm

@@ -154,7 +154,7 @@ asifjahmed
           name: "type",
           index: "type",
           sorttype: "int",
-          width: 25
+          width: 35
         }, {
           name: "lasttime",
           index: "lasttime",
@@ -164,7 +164,7 @@ asifjahmed
           name: "channel",
           index: "channel",
           sorttype: "int",
-          width: 40
+          width: 30
         }, {
           name: "signal_dbm",
           index: "signal_dbm",
@@ -235,7 +235,7 @@ asifjahmed
           name: "type",
           index: "type",
           sorttype: "int",
-          width: 20
+          width: 35
         }, {
           name: "lasttime",
           index: "lasttime",
@@ -245,7 +245,7 @@ asifjahmed
           name: "ppm",
           index: "ppm",
           sorttype: "int",
-          width: 25
+          width: 20
         }, {
           name: "username",
           index: "username",
