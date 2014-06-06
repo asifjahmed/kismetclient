@@ -3,14 +3,15 @@ deepscan
 v0.12345
 asifjahmed
 ###
-App = {}
-
 $(document).ready ->
-  App.socket = io.connect
-  App.socket.on 'ssid', App.ssid
-  App.socket.on 'client', App.client
-  App.socket.on 'time', App.time
-  App.socket.on 'packetrate', App.packetrate
+  socket = io.connect()
+  socket.on 'ssid', getssid
+  socket.on 'client', getclient
+  socket.on 'time', gettime
+  socket.on 'packetrate', getpacketrate
+
+  $('#enablerecentonly').change ->
+    toggleRecentOnly()
 
   renderGrids()
 
@@ -22,9 +23,9 @@ timeConverter = (unixtime)->
   "#{hour}:#{doubleDigit min}:#{doubleDigit sec}"
 
 doubleDigit = (n)->
-  if n > 9 then "" else "0"+n
+  if n > 9 then ""+n else "0"+n
 
-App.ssid = (data)->
+getssid = (data)->
   if $('#ssidalert').val() is data.mac
     if $('#enablessidsound').prop('checked')
       PlaySound 'sound1'
@@ -32,24 +33,24 @@ App.ssid = (data)->
   ssidexists = $('#ssidgrid').getCell data.mac, 'mac'
   if ssidexists
     $('#ssidgrid').setRowData data.mac,
-      ssid: data.ssid.trim() == '' ? '- hidden ssid -' : data.ssid
+      ssid: if data.ssid.trim() is '' then '- hidden ssid -' else data.ssid
       mac: data.mac
       type: data.type
-      lasttime: timeConverter(data.lasttime)
+      lasttime: timeConverter data.lasttime
       manuf: data.manuf
       channel: data.channel
       signal_dbm: data.signal_dbm
   else
     $('#ssidgrid').addRowData data.mac,
-      ssid: data.ssid.trim() == '' ? '- hidden ssid -' : data.ssid
+      ssid: if data.ssid.trim() is '' then '- hidden ssid -' else data.ssid
       mac: data.mac
       type: data.type
-      lasttime: timeConverter(data.lasttime)
+      lasttime: timeConverter data.lasttime
       manuf: data.manuf
       channel: data.channel
       signal_dbm: data.signal_dbm
 
-App.client = (data)->
+getclient = (data)->
   if $('#clientalert').val() is data.mac
     if $('#enableclientsound').prop('checked')
       PlaySound 'sound1'
@@ -58,12 +59,12 @@ App.client = (data)->
   if clientexists
     $('#clientgrid').setRowData data.mac,
       name: data.name
-      bssid: data.bssid == data.mac ? '- self -' : data.bssid
-      bssidsrc:     $('#ssidgrid').getRowData(data.bssid).ssid == undefined ? '' : $('#ssidgrid').getRowData(data.bssid).ssid
+      bssid: if data.bssid is data.mac then '- self -' else data.bssid
+      bssidsrc: if $('#ssidgrid').getRowData(data.bssid).ssid is undefined then '' else $('#ssidgrid').getRowData(data.bssid).ssid
       manuf: data.manuf
       mac: data.mac
       type: data.type
-      lasttime: timeConverter(data.lasttime)
+      lasttime: timeConverter data.lasttime
       signal_dbm: data.signal_dbm
       datasize: data.datasize
       ppm: data.ppm
@@ -72,24 +73,24 @@ App.client = (data)->
   else
     $('#clientgrid').addRowData data.mac,
       name: data.name
-      bssid: data.bssid == data.mac ? '- self -' : data.bssid
-      bssidsrc:     $('#ssidgrid').getRowData(data.bssid).ssid == undefined ? '' : $('#ssidgrid').getRowData(data.bssid).ssid
+      bssid: if data.bssid is data.mac then '- self -' else data.bssid
+      bssidsrc: if $('#ssidgrid').getRowData(data.bssid).ssid is undefined then '' else $('#ssidgrid').getRowData(data.bssid).ssid
       manuf: data.manuf
       mac: data.mac
       type: data.type
-      lasttime: timeConverter(data.lasttime)
+      lasttime: timeConverter data.lasttime
       signal_dbm: data.signal_dbm
       datasize: data.datasize
       ppm: data.ppm
       username: data.username
       channel: data.channel
 
-App.time = (data)->
+gettime = (data)->
   $('#txtTime').val timeConverter(data.timesec)
 
-App.packetrate = (data)->
+getpacketrate = (data)->
   unless $('#clientgrid').getRowData(data.mac) is undefined
-    if data.ppm is 0 and recentonly
+    if data.ppm is 0 and $('#enablerecentonly').prop('checked')
       $('#clientgrid').delRowData data.mac
     else
       $('#clientgrid').setCell data.mac, 'ppm', data.ppm
@@ -312,8 +313,7 @@ toggleRecentOnly = ->
   if recentonly
     data = $('#clientgrid').getDataIDs()
     x = 0
-    while x < data.length
-      mac = data[x]
-      $('#clientgrid').delRowData mac  if $('#clientgrid').getCell(mac, 'ppm') is 0
-      x++
+    for x in data
+      if $('#clientgrid').getCell(x, 'ppm') is 0
+        $('#clientgrid').delRowData x
     data.length = 0

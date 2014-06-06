@@ -7,16 +7,18 @@ asifjahmed
  */
 
 (function() {
-  var App, PlaySound, clientSelected, doubleDigit, renderGrids, ssidSelected, timeConverter, toggleRecentOnly;
-
-  App = {};
+  var PlaySound, clientSelected, doubleDigit, getclient, getpacketrate, getssid, gettime, renderGrids, ssidSelected, timeConverter, toggleRecentOnly;
 
   $(document).ready(function() {
-    App.socket = io.connect;
-    App.socket.on('ssid', App.ssid);
-    App.socket.on('client', App.client);
-    App.socket.on('time', App.time);
-    App.socket.on('packetrate', App.packetrate);
+    var socket;
+    socket = io.connect();
+    socket.on('ssid', getssid);
+    socket.on('client', getclient);
+    socket.on('time', gettime);
+    socket.on('packetrate', getpacketrate);
+    $('#enablerecentonly').change(function() {
+      return toggleRecentOnly();
+    });
     return renderGrids();
   });
 
@@ -31,14 +33,14 @@ asifjahmed
 
   doubleDigit = function(n) {
     if (n > 9) {
-      return "";
+      return "" + n;
     } else {
       return "0" + n;
     }
   };
 
-  App.ssid = function(data) {
-    var ssidexists, _ref, _ref1;
+  getssid = function(data) {
+    var ssidexists;
     if ($('#ssidalert').val() === data.mac) {
       if ($('#enablessidsound').prop('checked')) {
         PlaySound('sound1');
@@ -48,9 +50,7 @@ asifjahmed
     ssidexists = $('#ssidgrid').getCell(data.mac, 'mac');
     if (ssidexists) {
       return $('#ssidgrid').setRowData(data.mac, {
-        ssid: (_ref = data.ssid.trim() === '') != null ? _ref : {
-          '- hidden ssid -': data.ssid
-        },
+        ssid: data.ssid.trim() === '' ? '- hidden ssid -' : data.ssid,
         mac: data.mac,
         type: data.type,
         lasttime: timeConverter(data.lasttime),
@@ -60,9 +60,7 @@ asifjahmed
       });
     } else {
       return $('#ssidgrid').addRowData(data.mac, {
-        ssid: (_ref1 = data.ssid.trim() === '') != null ? _ref1 : {
-          '- hidden ssid -': data.ssid
-        },
+        ssid: data.ssid.trim() === '' ? '- hidden ssid -' : data.ssid,
         mac: data.mac,
         type: data.type,
         lasttime: timeConverter(data.lasttime),
@@ -73,8 +71,8 @@ asifjahmed
     }
   };
 
-  App.client = function(data) {
-    var clientexists, _ref, _ref1, _ref2, _ref3;
+  getclient = function(data) {
+    var clientexists;
     if ($('#clientalert').val() === data.mac) {
       if ($('#enableclientsound').prop('checked')) {
         PlaySound('sound1');
@@ -85,12 +83,8 @@ asifjahmed
     if (clientexists) {
       return $('#clientgrid').setRowData(data.mac, {
         name: data.name,
-        bssid: (_ref = data.bssid === data.mac) != null ? _ref : {
-          '- self -': data.bssid
-        },
-        bssidsrc: (_ref1 = $('#ssidgrid').getRowData(data.bssid).ssid === void 0) != null ? _ref1 : {
-          '': $('#ssidgrid').getRowData(data.bssid).ssid
-        },
+        bssid: data.bssid === data.mac ? '- self -' : data.bssid,
+        bssidsrc: $('#ssidgrid').getRowData(data.bssid).ssid === void 0 ? '' : $('#ssidgrid').getRowData(data.bssid).ssid,
         manuf: data.manuf,
         mac: data.mac,
         type: data.type,
@@ -104,12 +98,8 @@ asifjahmed
     } else {
       return $('#clientgrid').addRowData(data.mac, {
         name: data.name,
-        bssid: (_ref2 = data.bssid === data.mac) != null ? _ref2 : {
-          '- self -': data.bssid
-        },
-        bssidsrc: (_ref3 = $('#ssidgrid').getRowData(data.bssid).ssid === void 0) != null ? _ref3 : {
-          '': $('#ssidgrid').getRowData(data.bssid).ssid
-        },
+        bssid: data.bssid === data.mac ? '- self -' : data.bssid,
+        bssidsrc: $('#ssidgrid').getRowData(data.bssid).ssid === void 0 ? '' : $('#ssidgrid').getRowData(data.bssid).ssid,
         manuf: data.manuf,
         mac: data.mac,
         type: data.type,
@@ -123,13 +113,13 @@ asifjahmed
     }
   };
 
-  App.time = function(data) {
+  gettime = function(data) {
     return $('#txtTime').val(timeConverter(data.timesec));
   };
 
-  App.packetrate = function(data) {
+  getpacketrate = function(data) {
     if ($('#clientgrid').getRowData(data.mac) !== void 0) {
-      if (data.ppm === 0 && recentonly) {
+      if (data.ppm === 0 && $('#enablerecentonly').prop('checked')) {
         return $('#clientgrid').delRowData(data.mac);
       } else {
         return $('#clientgrid').setCell(data.mac, 'ppm', data.ppm);
@@ -322,17 +312,16 @@ asifjahmed
   };
 
   toggleRecentOnly = function() {
-    var data, mac, recentonly, x;
+    var data, recentonly, x, _i, _len;
     recentonly = $("#enablerecentonly").prop('checked');
     if (recentonly) {
       data = $('#clientgrid').getDataIDs();
       x = 0;
-      while (x < data.length) {
-        mac = data[x];
-        if ($('#clientgrid').getCell(mac, 'ppm') === 0) {
-          $('#clientgrid').delRowData(mac);
+      for (_i = 0, _len = data.length; _i < _len; _i++) {
+        x = data[_i];
+        if ($('#clientgrid').getCell(x, 'ppm') === 0) {
+          $('#clientgrid').delRowData(x);
         }
-        x++;
       }
       return data.length = 0;
     }
