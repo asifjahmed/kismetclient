@@ -9,23 +9,24 @@ $(document).ready ->
   socket.on 'client', getclient
   socket.on 'time', gettime
   socket.on 'packetrate', getpacketrate
+  socket.on 'clisrc', getclisrc
 
   $('#enablerecentonly').change ->
     toggleRecentOnly()
 
   renderGrids()
 
-timeConverter = (unixtime)->
+timeConverter = (unixtime) ->
   a = new Date(unixtime*1000)
   hour = a.getHours()
   min = a.getMinutes()
   sec = a.getSeconds()
   "#{hour}:#{doubleDigit min}:#{doubleDigit sec}"
 
-doubleDigit = (n)->
+doubleDigit = (n) ->
   if n > 9 then ""+n else "0"+n
 
-getssid = (data)->
+getssid = (data) ->
   if $('#ssidalert').val() is data.mac
     if $('#enablessidsound').prop('checked')
       PlaySound 'sound1'
@@ -50,7 +51,7 @@ getssid = (data)->
       channel: data.channel
       signal_dbm: data.signal_dbm
 
-getclient = (data)->
+getclient = (data) ->
   if $('#clientalert').val() is data.mac
     if $('#enableclientsound').prop('checked')
       PlaySound 'sound1'
@@ -85,15 +86,20 @@ getclient = (data)->
       username: data.username
       channel: data.channel
 
-gettime = (data)->
+gettime = (data) ->
   $('#txtTime').val timeConverter(data.timesec)
 
-getpacketrate = (data)->
+getpacketrate = (data) ->
   unless $('#clientgrid').getRowData(data.mac) is undefined
     if data.ppm is 0 and $('#enablerecentonly').prop('checked')
       $('#clientgrid').delRowData data.mac
     else
       $('#clientgrid').setCell data.mac, 'ppm', data.ppm
+
+getclisrc = (data) ->
+  unless $('#clientgrid').getRowData(data.mac) is undefined
+    $('#clientgrid').setCell data.mac, 'username', data.username
+    $('#clientgrid').setCell data.mac, 'channel', data.channel
 
 renderGrids = ->
   $("#ssidgrid").jqGrid
@@ -297,23 +303,19 @@ renderGrids = ->
     stringResult: true
     searchOnEnter: false
 
-ssidSelected = (obj)->
+ssidSelected = (obj) ->
   $('#clientgrid').resetSelection()
   $('#ssidalert').val obj
 
-clientSelected = (obj)->
+clientSelected = (obj) ->
   $('#ssidgrid').resetSelection()
   $('#clientalert').val obj
 
-PlaySound = (sound)->
+PlaySound = (sound) ->
   $("##{sound}")[0].play()
 
 toggleRecentOnly = ->
-  recentonly = $("#enablerecentonly").prop 'checked'
-  if recentonly
-    data = $('#clientgrid').getDataIDs()
-    x = 0
-    for x in data
-      if $('#clientgrid').getCell(x, 'ppm') is 0
-        $('#clientgrid').delRowData x
-    data.length = 0
+  if $("#enablerecentonly").prop 'checked'
+    macs = $('#clientgrid').getDataIDs()
+    $('#clientgrid').delRowData mac for mac in macs when Number($('#clientgrid').getCell(mac, 'ppm')) is 0
+    macs.length = 0

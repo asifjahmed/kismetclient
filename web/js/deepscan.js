@@ -7,7 +7,7 @@ asifjahmed
  */
 
 (function() {
-  var PlaySound, clientSelected, doubleDigit, getclient, getpacketrate, getssid, gettime, renderGrids, ssidSelected, timeConverter, toggleRecentOnly;
+  var PlaySound, clientSelected, doubleDigit, getclient, getclisrc, getpacketrate, getssid, gettime, renderGrids, ssidSelected, timeConverter, toggleRecentOnly;
 
   $(document).ready(function() {
     var socket;
@@ -16,6 +16,7 @@ asifjahmed
     socket.on('client', getclient);
     socket.on('time', gettime);
     socket.on('packetrate', getpacketrate);
+    socket.on('clisrc', getclisrc);
     $('#enablerecentonly').change(function() {
       return toggleRecentOnly();
     });
@@ -124,6 +125,13 @@ asifjahmed
       } else {
         return $('#clientgrid').setCell(data.mac, 'ppm', data.ppm);
       }
+    }
+  };
+
+  getclisrc = function(data) {
+    if ($('#clientgrid').getRowData(data.mac) !== void 0) {
+      $('#clientgrid').setCell(data.mac, 'username', data.username);
+      return $('#clientgrid').setCell(data.mac, 'channel', data.channel);
     }
   };
 
@@ -312,18 +320,16 @@ asifjahmed
   };
 
   toggleRecentOnly = function() {
-    var data, recentonly, x, _i, _len;
-    recentonly = $("#enablerecentonly").prop('checked');
-    if (recentonly) {
-      data = $('#clientgrid').getDataIDs();
-      x = 0;
-      for (_i = 0, _len = data.length; _i < _len; _i++) {
-        x = data[_i];
-        if ($('#clientgrid').getCell(x, 'ppm') === 0) {
-          $('#clientgrid').delRowData(x);
+    var mac, macs, _i, _len;
+    if ($("#enablerecentonly").prop('checked')) {
+      macs = $('#clientgrid').getDataIDs();
+      for (_i = 0, _len = macs.length; _i < _len; _i++) {
+        mac = macs[_i];
+        if (Number($('#clientgrid').getCell(mac, 'ppm')) === 0) {
+          $('#clientgrid').delRowData(mac);
         }
       }
-      return data.length = 0;
+      return macs.length = 0;
     }
   };
 

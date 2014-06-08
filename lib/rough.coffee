@@ -34,36 +34,36 @@ k.on 'ready', ->
   ###
   subscribe to kismet server data
   ###
-  @subscribe 'bssid', ['bssid','manuf','channel','signal_dbm'], (had_error, message)->
+  @subscribe 'bssid', ['bssid','manuf','channel','signal_dbm'], (had_error, message) ->
     console.log "bssid #{message}"
 
-  @subscribe 'ssid', ['ssid','mac','type','lasttime'], (had_error, message)->
+  @subscribe 'ssid', ['ssid','mac','type','lasttime'], (had_error, message) ->
     console.log "ssid #{message}"
 
-  @subscribe 'client', ['bssid','mac','manuf','type','lasttime','datasize','signal_dbm'], (had_error, message)->
+  @subscribe 'client', ['bssid','mac','manuf','type','lasttime','datasize','signal_dbm'], (had_error, message) ->
     console.log "client #{message}"
 
-  @subscribe 'clisrc', ['uuid','mac','lasttime','signal_dbm'], (had_error, message)->
+  @subscribe 'clisrc', ['uuid','mac','lasttime','signal_dbm'], (had_error, message) ->
     console.log "clisrc #{message}"
 
-  @subscribe 'source', ['username','channel','uuid'], (had_error, message)->
+  @subscribe 'source', ['username','channel','uuid'], (had_error, message) ->
     console.log "source #{message}"
 
 
 ###
 kismet data handlers
 ###
-k.on 'CAPABILITY', (fields)->
+k.on 'CAPABILITY', (fields) ->
   console.log 'capability: #{fields.protocol}'
   console.log fields.fields.split ','
 
-k.on 'BSSID', (fields)->
+k.on 'BSSID', (fields) ->
   unless ssids[fields.bssid] is undefined
     ssids[fields.bssid].manuf = fields.manuf
     ssids[fields.bssid].channel = fields.channel
     ssids[fields.bssid].signal_dbm = fields.signal_dbm
 
-k.on 'SSID', (fields)->
+k.on 'SSID', (fields) ->
   if ssids[fields.mac] is undefined
     ssids[fields.mac] =
       ssid: ''
@@ -86,7 +86,7 @@ k.on 'SSID', (fields)->
     channel: ssids[fields.mac].channel
     signal_dbm: ssids[fields.mac].signal_dbm
 
-k.on 'CLIENT', (fields)->
+k.on 'CLIENT', (fields) ->
   if clients[fields.mac] is undefined
     clients[fields.mac] =
       name: ''
@@ -124,24 +124,29 @@ k.on 'CLIENT', (fields)->
     username: clients[fields.mac].username
     channel: clients[fields.mac].channel
 
-k.on 'CLISRC', (fields)->
+k.on 'CLISRC', (fields) ->
   unless source[fields.uuid] is undefined
     if clients[fields.mac].lasttime is fields.lasttime
       clients[fields.mac].username = source[fields.uuid].username
       clients[fields.mac].channel = source[fields.uuid].channel
 
-k.on 'SOURCE', (fields)->
+      app.io.broadcast 'clisrc',
+        mac: fields.mac
+        username: clients[fields.mac].username
+        channel: clients[fields.mac].channel
+
+k.on 'SOURCE', (fields) ->
   source[fields.uuid] =
     username: fields.username
     channel: fields.channel
 
-k.on 'TIME', (fields)->
+k.on 'TIME', (fields) ->
   rightnow = Number fields.time
   updatePacketRates()
   app.io.broadcast 'time',
     timesec: fields.time
 
-k.on 'error', (error)->
+k.on 'error', (error) ->
   console.log "kismet had an error: #{error.code}"
 
 k.on 'end', ->
@@ -193,7 +198,7 @@ updatePacketRates = ->
 ###
 initialize express.io
 ###
-app.get '/', (req, res)->
+app.get '/', (req, res) ->
   console.log "tcp client #{req.connection.remoteAddress} connected."
   if not k.connected then k.connect()
   res.sendfile path.join(__dirname,'..','web','deepscan.html')

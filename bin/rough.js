@@ -156,7 +156,12 @@ module dependencies
     if (source[fields.uuid] !== void 0) {
       if (clients[fields.mac].lasttime === fields.lasttime) {
         clients[fields.mac].username = source[fields.uuid].username;
-        return clients[fields.mac].channel = source[fields.uuid].channel;
+        clients[fields.mac].channel = source[fields.uuid].channel;
+        return app.io.broadcast('clisrc', {
+          mac: fields.mac,
+          username: clients[fields.mac].username,
+          channel: clients[fields.mac].channel
+        });
       }
     }
   });
