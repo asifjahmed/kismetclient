@@ -159,9 +159,11 @@ helper functions
 getOwners = ->
   console.log "reading owners file"
   fs.readFile '../etc/owner.txt', (err, data)->
+    if err
+      console.log "Err: #{err}"
     for ln of String(data).split("\n")
       owners[String(data).split("\n")[ln].substring(0, 17)] = String(data).split("\n")[ln].substring(18)
-  console.log "done reading owners file"
+    console.log "done reading owners file"
 
 updatePacketRate = (mac, lasttime) ->
   x = 0

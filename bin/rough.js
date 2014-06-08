@@ -196,15 +196,16 @@ module dependencies
 
   getOwners = function() {
     console.log("reading owners file");
-    fs.readFile('../etc/owner.txt', function(err, data) {
-      var ln, _results;
-      _results = [];
-      for (ln in String(data).split("\n")) {
-        _results.push(owners[String(data).split("\n")[ln].substring(0, 17)] = String(data).split("\n")[ln].substring(18));
+    return fs.readFile('../etc/owner.txt', function(err, data) {
+      var ln;
+      if (err) {
+        console.log("Err: " + err);
       }
-      return _results;
+      for (ln in String(data).split("\n")) {
+        owners[String(data).split("\n")[ln].substring(0, 17)] = String(data).split("\n")[ln].substring(18);
+      }
+      return console.log("done reading owners file");
     });
-    return console.log("done reading owners file");
   };
 
   updatePacketRate = function(mac, lasttime) {
