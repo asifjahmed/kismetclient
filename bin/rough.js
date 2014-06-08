@@ -196,10 +196,10 @@ module dependencies
 
   getOwners = function() {
     console.log("reading owners file");
-    return fs.readFile('../etc/owner.txt', function(err, data) {
+    return fs.readFile(path.join(__dirname, '..', 'etc', 'owner.txt'), function(err, data) {
       var ln;
       if (err) {
-        console.log("Err: " + err);
+        console.log(err);
       }
       for (ln in String(data).split("\n")) {
         owners[String(data).split("\n")[ln].substring(0, 17)] = String(data).split("\n")[ln].substring(18);

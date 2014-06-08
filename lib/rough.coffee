@@ -158,9 +158,8 @@ helper functions
 ###
 getOwners = ->
   console.log "reading owners file"
-  fs.readFile '../etc/owner.txt', (err, data)->
-    if err
-      console.log "Err: #{err}"
+  fs.readFile path.join(__dirname, '..', 'etc', 'owner.txt'), (err, data)->
+    if err then console.log err
     for ln of String(data).split("\n")
       owners[String(data).split("\n")[ln].substring(0, 17)] = String(data).split("\n")[ln].substring(18)
     console.log "done reading owners file"
