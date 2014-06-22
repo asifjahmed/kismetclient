@@ -89,71 +89,75 @@ module dependencies
   });
 
   k.on('SSID', function(fields) {
-    if (ssids[fields.mac] === void 0) {
-      ssids[fields.mac] = {
-        ssid: '',
-        type: 0,
-        lasttime: 0,
-        manuf: '',
-        channel: 0,
-        signal_dbm: 0
-      };
+    if (Number(fields.type) === 0) {
+      if (ssids[fields.mac] === void 0) {
+        ssids[fields.mac] = {
+          ssid: '',
+          type: 0,
+          lasttime: 0,
+          manuf: '',
+          channel: 0,
+          signal_dbm: 0
+        };
+      }
+      ssids[fields.mac].ssid = fields.ssid;
+      ssids[fields.mac].type = fields.type;
+      ssids[fields.mac].lasttime = fields.lasttime;
+      return app.io.broadcast('ssid', {
+        mac: fields.mac,
+        ssid: ssids[fields.mac].ssid,
+        type: k.types.lookup('ssid', ssids[fields.mac].type),
+        lasttime: ssids[fields.mac].lasttime,
+        manuf: ssids[fields.mac].manuf,
+        channel: ssids[fields.mac].channel,
+        signal_dbm: ssids[fields.mac].signal_dbm
+      });
     }
-    ssids[fields.mac].ssid = fields.ssid;
-    ssids[fields.mac].type = fields.type;
-    ssids[fields.mac].lasttime = fields.lasttime;
-    return app.io.broadcast('ssid', {
-      mac: fields.mac,
-      ssid: ssids[fields.mac].ssid,
-      type: k.types.lookup('ssid', ssids[fields.mac].type),
-      lasttime: ssids[fields.mac].lasttime,
-      manuf: ssids[fields.mac].manuf,
-      channel: ssids[fields.mac].channel,
-      signal_dbm: ssids[fields.mac].signal_dbm
-    });
   });
 
   k.on('CLIENT', function(fields) {
-    if (clients[fields.mac] === void 0) {
-      clients[fields.mac] = {
-        name: '',
-        manuf: '',
-        bssid: '',
-        type: 0,
-        lasttime: 0,
-        datasize: 0,
-        signal_dbm: 0,
-        ppm: 1,
-        username: '',
-        channel: 0
-      };
+    if (ssids[fields.mac] === void 0) {
+      if (clients[fields.mac] === void 0) {
+        clients[fields.mac] = {
+          name: '',
+          manuf: '',
+          bssid: '',
+          type: 0,
+          lasttime: 0,
+          datasize: 0,
+          signal_dbm: 0,
+          ppm: 1,
+          username: '',
+          channel: 0
+        };
+      }
+      clients[fields.mac].name = owners[fields.mac];
+      clients[fields.mac].manuf = fields.manuf;
+      clients[fields.mac].bssid = fields.bssid;
+      clients[fields.mac].type = fields.type;
+      clients[fields.mac].lasttime = fields.lasttime;
+      clients[fields.mac].datasize = fields.datasize;
+      clients[fields.mac].signal_dbm = fields.signal_dbm;
+      clients[fields.mac].ppm = packetrates[fields.mac] === void 0 ? 0 : packetrates[fields.mac].ppm;
+      updatePacketRate(fields.mac, fields.lasttime);
+      return app.io.broadcast('client', {
+        mac: fields.mac,
+        name: owners[fields.mac],
+        manuf: clients[fields.mac].manuf,
+        bssid: clients[fields.mac].bssid,
+        type: k.types.lookup('client', clients[fields.mac].type),
+        lasttime: clients[fields.mac].lasttime,
+        datasize: clients[fields.mac].datasize,
+        signal_dbm: clients[fields.mac].signal_dbm,
+        ppm: packetrates[fields.mac] === void 0 ? 0 : packetrates[fields.mac].ppm,
+        username: clients[fields.mac].username,
+        channel: clients[fields.mac].channel
+      });
     }
-    clients[fields.mac].name = owners[fields.mac];
-    clients[fields.mac].manuf = fields.manuf;
-    clients[fields.mac].bssid = fields.bssid;
-    clients[fields.mac].type = fields.type;
-    clients[fields.mac].lasttime = fields.lasttime;
-    clients[fields.mac].datasize = fields.datasize;
-    clients[fields.mac].signal_dbm = fields.signal_dbm;
-    clients[fields.mac].ppm = packetrates[fields.mac] === void 0 ? 0 : packetrates[fields.mac].ppm;
-    updatePacketRate(fields.mac, fields.lasttime);
-    return app.io.broadcast('client', {
-      mac: fields.mac,
-      name: owners[fields.mac],
-      manuf: clients[fields.mac].manuf,
-      bssid: clients[fields.mac].bssid,
-      type: k.types.lookup('client', clients[fields.mac].type),
-      lasttime: clients[fields.mac].lasttime,
-      datasize: clients[fields.mac].datasize,
-      signal_dbm: clients[fields.mac].signal_dbm,
-      ppm: packetrates[fields.mac] === void 0 ? 0 : packetrates[fields.mac].ppm,
-      username: clients[fields.mac].username,
-      channel: clients[fields.mac].channel
-    });
   });
 
   k.on('CLISRC', function(fields) {
-    if (source[fields.uuid] !== void 0) {
+    if (!(source[fields.uuid] === void 0 || clients[fields.mac] === void 0)) {
       if (clients[fields.mac].lasttime === fields.lasttime) {
         clients[fields.mac].username = source[fields.uuid].username;
         clients[fields.mac].channel = source[fields.uuid].channel;
@@ -239,7 +243,7 @@ module dependencies
         if (packetrates[i].packets[j] < (rightnow - 60)) {
           changed = true;
           packetrates[i].packets.splice(j, 1);
-          if (packetrate >= 0) {
+          if (packetrate > 0) {
             packetrate--;
           }
         }

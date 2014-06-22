@@ -123,6 +123,7 @@ asifjahmed
       if (data.ppm === 0 && $('#enablerecentonly').prop('checked')) {
         return $('#clientgrid').delRowData(data.mac);
       } else {
+        console.log("" + data.mac + " - " + data.ppm);
         return $('#clientgrid').setCell(data.mac, 'ppm', data.ppm);
       }
     }
